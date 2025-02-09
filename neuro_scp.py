@@ -17,20 +17,18 @@ class NeuralNetwork(nn.Module):
         self.encoder = nn.Sequential(
             nn.Linear(8, 16),
             nn.ReLU(),
-            nn.Linear(16, 32),
             nn.Sigmoid()
         )
         self.decoder = nn.Sequential(
-            nn.Linear(32, 16),
-            nn.ReLU(),
             nn.Linear(16, 8),
+            nn.ReLU(),
             nn.Sigmoid()
         )
 
     def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+        return decoded
 
 # Train the PyTorch model
 def train_model(X, y):
@@ -67,22 +65,22 @@ def predict_rules(model, X):
 
 # Main function
 def main():
-    transactions = {'A': 5, 'B': 3, 'C': 2, 'D': 4, 'E': 1}
-    min_support = 0.2
-
     # Convert transactions to a suitable format for the neural network
     X = pd.DataFrame({'item': list(transactions.keys()), 'count': list(transactions.values())})
     X['count'] = X['count'].astype('int')  # Convert values in the count column to integer type
 
-    # Add stochastic data with NumPy
+    # Create a one-hot encoding for the 'item' column
+    X = pd.get_dummies(X, columns=['item'])
+
+    # Generate random stochastic data
     stochastic_data = np.random.randn(len(X))
     X['stochastic'] = stochastic_data
 
     # Train the PyTorch model
-    model = train_model(X[['count', 'stochastic']], X[['count']])
+    model = train_model(X.drop(columns=['count']), X[['count']])
 
     # Use the trained model to predict association rules
-    rules = predict_rules(model, X[['count', 'stochastic']])
+    rules = predict_rules(model, X.drop(columns=['count']))
 
     print("Rules:")
     for rule in rules:
