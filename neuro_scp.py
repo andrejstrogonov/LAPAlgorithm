@@ -65,11 +65,17 @@ def predict_rules(model, X):
 
 # Main function
 def main():
-    # Convert transactions to a suitable format for the neural network
-    X = pd.DataFrame({'item': list(transactions.keys()), 'count': list(transactions.values())})
-    X['count'] = X['count'].astype('int')  # Convert values in the count column to integer type
+    transactions = [
+        frozenset(['milk', 'bread', 'butter']),
+        frozenset(['bread', 'diaper', 'beer', 'milk']),
+        frozenset(['milk', 'bread', 'diaper']),
+        frozenset(['diaper', 'milk', 'bread']),
+        frozenset(['bread', 'diaper', 'milk', 'beer'])
+    ]
+    min_support = 0.5  # Define the minimum support value
 
-    # Create a one-hot encoding for the 'item' column
+    # Convert transactions to a suitable format for the neural network
+    X = pd.DataFrame({'item': list(transactions)})
     X = pd.get_dummies(X, columns=['item'])
 
     # Generate random stochastic data
@@ -77,10 +83,10 @@ def main():
     X['stochastic'] = stochastic_data
 
     # Train the PyTorch model
-    model = train_model(X.drop(columns=['count']), X[['count']])
+    model = train_model(X.drop(columns=['item_milk', 'item_bread', 'item_butter', 'item_diaper', 'item_beer']), X[['item_milk', 'item_bread', 'item_butter', 'item_diaper', 'item_beer']])
 
     # Use the trained model to predict association rules
-    rules = predict_rules(model, X.drop(columns=['count']))
+    rules = predict_rules(model, X.drop(columns=['item_milk', 'item_bread', 'item_butter', 'item_diaper', 'item_beer']))
 
     print("Rules:")
     for rule in rules:
