@@ -1,11 +1,9 @@
 import pandas as pd
 import numpy as np
-import numba as nb
 import torch
 from torch import nn
 
 # Use numba to optimize the check_rule function
-@nb.njit
 def check_rule(transactions, rule, min_support):
     support = len([transaction for transaction in transactions if rule.issubset(transaction)]) / len(transactions)
     return support >= min_support
@@ -15,20 +13,19 @@ class NeuralNetwork(nn.Module):
     def __init__(self):
         super(NeuralNetwork, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Linear(8, 16),
+            nn.Linear(3, 16),  # Изменён размер входного слоя
             nn.ReLU(),
             nn.Sigmoid()
         )
         self.decoder = nn.Sequential(
-            nn.Linear(16, 8),
-            nn.ReLU(),
-            nn.Sigmoid()
+            nn.Linear(16, 1),  # Изменён размер выходного слоя
+            nn.Sigmoid()  # Добавлена функция активации Sigmoid
         )
 
     def forward(self, x):
-        encoded = self.encoder(x)
-        decoded = self.decoder(encoded)
-        return decoded
+        x = self.encoder(x)
+        x = self.decoder(x)
+        return x
 
 # Train the PyTorch model
 def train_model(X, y):
@@ -37,7 +34,8 @@ def train_model(X, y):
     optimizer = torch.optim.Adam(model.parameters())
 
     X = torch.tensor(X.values).float()
-    y = torch.tensor(y.values).float().view(-1, 1)
+    y = torch.tensor(y.values).float().view(-1, 1)  # Изменён размер целевых значений
+    y = torch.clamp(y, min=0, max=1)  # Ограничение диапазона целевых значений
 
     for epoch in range(100):
         outputs = model(X)
@@ -83,10 +81,10 @@ def main():
     X['stochastic'] = stochastic_data
 
     # Train the PyTorch model
-    model = train_model(X.drop(columns=['item_milk', 'item_bread', 'item_butter', 'item_diaper', 'item_beer']), X[['item_milk', 'item_bread', 'item_butter', 'item_diaper', 'item_beer']])
+    model = train_model(X.drop(columns=['stochastic'], axis=1), X['stochastic'])
 
     # Use the trained model to predict association rules
-    rules = predict_rules(model, X.drop(columns=['item_milk', 'item_bread', 'item_butter', 'item_diaper', 'item_beer']))
+    rules = predict_rules(model, X.drop(columns=['stochastic']))
 
     print("Rules:")
     for rule in rules:
