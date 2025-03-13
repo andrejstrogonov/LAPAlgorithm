@@ -1,5 +1,5 @@
 import random
-from collections import defaultdict
+
 
 class FormalContext:
     def __init__(self, objects, attributes, relations):
