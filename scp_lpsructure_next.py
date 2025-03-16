@@ -1,6 +1,70 @@
 import random
 import math
 
+class LPStructure:
+    def __init__(self, eLengthItems, eItemBitSize):
+        self.eLengthItems = eLengthItems
+        self.eItemBitSize = eItemBitSize
+
+    def EQ(self, ls, rs):
+        for i in range(self.eLengthItems):
+            if ls[i] != rs[i]:
+                return False
+        return True
+
+    def EZ(self, ls):
+        for i in range(self.eLengthItems):
+            if ls[i]:
+                return False
+        return True
+
+    def LE(self, ls, rs):
+        for i in range(self.eLengthItems):
+            if (ls[i] | rs[i]) != rs[i]:
+                return False
+        return True
+
+    def LT(self, ls, rs):
+        bExistLT = False
+        for i in range(self.eLengthItems):
+            if (ls[i] | rs[i]) == rs[i]:
+                if ls[i] != rs[i]:
+                    bExistLT = True
+            else:
+                return False
+        return bExistLT
+
+    def lJoin(self, ls, rs):
+        for i in range(self.eLengthItems):
+            ls[i] |= rs[i]
+
+    def lMeet(self, ls, rs):
+        for i in range(self.eLengthItems):
+            ls[i] &= rs[i]
+
+    def lDiff(self, ls, rs):
+        res = False
+        for i in range(self.eLengthItems):
+            if ls[i] & rs[i]:
+                ls[i] &= ~rs[i]
+                res = True
+        return res
+
+    def isMeet(self, ls, rs):
+        for i in range(self.eLengthItems):
+            if ls[i] & rs[i]:
+                return True
+        return False
+
+    def isON(self, eTest, nAtom):
+        nItem = nAtom // self.eItemBitSize
+        nBit = nAtom % self.eItemBitSize
+        nMask = 1 << (self.eItemBitSize - 1 - nBit)
+        return bool(eTest[nItem] & nMask)
+
+
+
+
 class Lattice:
     def __init__(self, points):
         self.points = points
