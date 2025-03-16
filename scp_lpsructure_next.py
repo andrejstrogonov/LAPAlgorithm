@@ -61,7 +61,76 @@ class LPStructure:
         nBit = nAtom % self.eItemBitSize
         nMask = 1 << (self.eItemBitSize - 1 - nBit)
         return bool(eTest[nItem] & nMask)
+class LPStructure:
+    def lReductionLC(self, onEvent, dwUser):
+        # Удаление логически связанных пар
+        self.prContainer = [pair for pair in self.prContainer if not self.isLConnected(pair, onEvent, dwUser)]
+        return len(self.prContainer)
 
+    def isLConnected(self, aPair, onEvent, dwUser):
+        eRight = self.right(aPair)  # Элемент, который требуется получить при выводе
+        eRes = self.left(aPair)  # Текущий результат полного прямого вывода
+
+        if not eRight or not eRes:
+            return False
+
+        # Проверка на "подчинённую" пару
+        if self.LE(eRight, eRes):
+            return True
+
+        # Память для результата логического вывода
+        bRes = bytearray(eRes)
+        eRes = bRes
+
+        # Вектор для возможного запоминания цепочки вывода
+        prSecVector = []
+
+        res = False
+        wasAdded = True
+
+        # Копия исходного множества пар
+        tmpContainer = list(self.prContainer)
+        tmpContainer.remove(aPair)  # Будем искать логическую связь в остальных парах
+
+        while not res and wasAdded:
+            wasAdded = False
+            for i, prCurr in enumerate(tmpContainer):
+                if self.LE(self.left(prCurr), eRes):  # left(prCurr) <= eRes
+                    # Задан режим запоминания вывода - сохраняем пары, вносящие вклад
+                    if onEvent and not self.LE(self.right(prCurr), eRes):
+                        prSecVector.append(prCurr)
+
+                    self.lJoin(eRes, self.right(prCurr))  # eRes |= right(prCurr)
+                    wasAdded = True  # Результат увеличился
+
+                    tmpContainer.pop(i)  # Каждая пара используется единственный раз
+
+                    if self.LE(eRight, eRes):
+                        res = True
+                        break  # eRight <= eRes
+
+        # Не зря запоминали вывод - сообщаем о результатах
+        if res and onEvent:
+            onEvent(aPair, "etRedundant", dwUser)  # Лишняя пара
+            # Её вывод
+            for k in prSecVector:
+                onEvent(k, "etInference", dwUser)
+
+        return res
+
+    # Пример реализации вспомогательных методов
+    def left(self, pair):
+        return pair[0]
+
+    def right(self, pair):
+        return pair[1]
+
+    def LE(self, ls, rs):
+        return all(l <= r for l, r in zip(ls, rs))
+
+    def lJoin(self, eRes, right):
+        for i in range(len(eRes)):
+            eRes[i] |= right[i]
 
 
 
