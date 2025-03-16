@@ -47,7 +47,7 @@ def fitness(chromosome, subsets, elements):
     cost = 0
     for i, bit in enumerate(chromosome):
         if bit == 1:
-            covered.update(subsets[i])
+            covered.update(list(subsets)[i])  # Convert dict_values to list
             cost += 1  # Assuming unit cost for simplicity
     if covered == elements:
         return 1 / cost
@@ -72,9 +72,11 @@ def mutate(chromosome, mutation_rate):
 def solve_scp_fca(formal_context, pop_size=100, max_gens=100, crossover_rate=0.8, mutation_rate=0.1):
     population = generate_initial_population(pop_size, len(formal_context.relations))
     for gen in range(max_gens):
-        fitnesses = [fitness(chromosome, formal_context.relations.values(), formal_context.attributes) for chromosome in population]
+        fitnesses = [fitness(chromosome, list(formal_context.relations.values()), formal_context.attributes) for chromosome in population]
+        # Add a small positive value to the fitnesses list
+        fitnesses = [f + 1e-6 for f in fitnesses]
         best_chromosome = max(zip(fitnesses, population))[1]
-        print(f"Generation {gen}: Best fitness = {fitness(best_chromosome, formal_context.relations.values(), formal_context.attributes)}")
+        print(f"Generation {gen}: Best fitness = {fitness(best_chromosome, list(formal_context.relations.values()), formal_context.attributes)}")
         new_population = []
         while len(new_population) < pop_size:
             parents = random.choices(population, weights=fitnesses, k=2)
@@ -82,7 +84,7 @@ def solve_scp_fca(formal_context, pop_size=100, max_gens=100, crossover_rate=0.8
             children = [mutate(child, mutation_rate) for child in children]
             new_population.extend(children)
         population = new_population
-    best_solution = max(zip([fitness(chromosome, formal_context.relations.values(), formal_context.attributes) for chromosome in population], population))[1]
+    best_solution = max(zip([fitness(chromosome, list(formal_context.relations.values()), formal_context.attributes) for chromosome in population], population))[1]
     return best_solution
 
 # Пример использования
