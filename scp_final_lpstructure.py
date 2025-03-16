@@ -1,5 +1,6 @@
 import random
 
+import random
 
 class LPStructure:
     def __init__(self, eLengthItems, eItemBitSize):
@@ -134,74 +135,63 @@ class LPStructureReduction(LPStructure):
     def right(self, pair):
         return pair[1]
 
-def generate_initial_population(size, num_subsets):
-    population = []
-    for _ in range(size):
-        chromosome = [random.choice([0, 1]) for _ in range(num_subsets)]
-        population.append(chromosome)
-    return population
+class SCPAlgorithm:
+    def __init__(self, lp_structure, population_size=100, generations=100):
+        self.lp_structure = lp_structure
+        self.population_size = population_size
+        self.generations = generations
 
-def fitness(chromosome, subsets, lattice):
-    covered = set()
-    cost = 0
-    subset_keys = list(subsets.keys())  # Get the keys once to avoid repeated calls
-    for i, bit in enumerate(chromosome):
-        if bit == 1:
-            if i < len(subset_keys):  # Ensure the index is within bounds
-                point = subset_keys[i]
-                covered.update(subsets[point])
-                cost += lattice.calculate_distance(point, point)
-    if covered == set(lattice.points):
-        return 1 / cost
-    else:
-        return 0
+    def generate_individual(self):
+        individual = []
+        for _ in range(self.lp_structure.eLengthItems):
+            item = [random.choice([0, 1]) for _ in range(self.lp_structure.eItemBitSize)]
+            individual.append(item)
+        return individual
 
-def crossover(parent1, parent2, crossover_rate, lattice):
-    if random.random() < crossover_rate:
+    def generate_population(self):
+        population = [self.generate_individual() for _ in range(self.population_size)]
+        return population
+
+    def fitness(self, individual):
+        score = 0
+        for i in range(self.lp_structure.eLengthItems):
+            if self.lp_structure.isON(individual, i):
+                score += 1
+        return score
+
+    def select(self, population):
+        scored = [(self.fitness(individual), individual) for individual in population]
+        scored.sort()
+        ranked = [individual for (score, individual) in scored]
+        return ranked[:int(0.2 * len(ranked))]  # Select top 20%
+
+    def crossover(self, parent1, parent2):
         point = random.randint(1, len(parent1) - 1)
         child1 = parent1[:point] + parent2[point:]
         child2 = parent2[:point] + parent1[point:]
         return child1, child2
-    else:
-        return parent1, parent2
 
-def mutate(chromosome, mutation_rate, lattice):
-    for i in range(len(chromosome)):
-        if random.random() < mutation_rate:
-            chromosome[i] = 1 - chromosome[i]
-    return chromosome
+    def mutate(self, individual):
+        for i in range(len(individual)):
+            if random.random() < 0.01:  # 1% chance of mutation
+                individual[i] = [random.choice([0, 1]) for _ in range(self.lp_structure.eItemBitSize)]
+        return individual
 
-def solve_scp_fca(formal_context, pop_size=100, max_gens=100, crossover_rate=0.8, mutation_rate=0.1):
-    num_points = 10
-    lattice = LPStructure(points)
-    subsets = {point: formal_context.relations[point] for point in lattice.points}  # Initialize subsets here
-    population = generate_initial_population(pop_size, len(subsets))  # Use the length of subsets
-    for gen in range(max_gens):
-        fitnesses = [fitness(chromosome, subsets, lattice) for chromosome in population]
-        # Add a small positive value to the fitnesses list
-        fitnesses = [f + 1e-6 for f in fitnesses]
-        best_chromosome = max(zip(fitnesses, population))[1]
-        print(f"Generation {gen}: Best fitness = {fitness(best_chromosome, subsets, lattice)}")
-        new_population = []
-        while len(new_population) < pop_size:
-            parents = random.choices(population, weights=fitnesses, k=2)
-            children = crossover(parents[0], parents[1], crossover_rate, lattice)
-            children = [mutate(child, mutation_rate, lattice) for child in children]
-            new_population.extend(children)
-        population = new_population
-    best_solution = max(zip([fitness(chromosome, subsets, lattice) for chromosome in population], population))[1]
-    return best_solution
+    def evolve(self):
+        population = self.generate_population()
+        for _ in range(self.generations):
+            selected = self.select(population)
+            next_generation = selected[:]
+            while len(next_generation) < self.population_size:
+                parents = random.sample(selected, 2)
+                children = self.crossover(parents[0], parents[1])
+                next_generation.extend(children)
+            population = [self.mutate(individual) for individual in next_generation]
+        best_individual = self.select(population)[0]
+        return best_individual
 
 # Пример использования
-points = [(x, y) for x in range(10) for y in range(10)]
-relations = {point: set([f'{x}{y}' for x in range(3) for y in range(3)]) for point in points}
-formal_context = sequences = [
-    ['A', 'B', 'C'],
-    ['A', 'B', 'D'],
-    ['B', 'C', 'D'],
-    ['A', 'C', 'D'],
-    ['A', 'B', 'C', 'D']
-]  # Import the formal_context module and define it here
-lattice = LPStructure(points)
-solution = solve_scp_fca(formal_context)
-print("Best solution:", solution)
+lp_structure = LPStructure(10, 8)
+scp_algorithm = SCPAlgorithm(lp_structure)
+best_individual = scp_algorithm.evolve()
+print("Best Individual:", best_individual)
