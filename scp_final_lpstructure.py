@@ -1,7 +1,5 @@
 import random
 
-import random
-
 class LPStructure:
     def __init__(self, eLengthItems, eItemBitSize):
         self.eLengthItems = eLengthItems
@@ -153,9 +151,11 @@ class SCPAlgorithm:
         return population
 
     def fitness(self, individual):
+        # Flatten the individual list
+        flat_individual = [bit for item in individual for bit in item]
         score = 0
         for i in range(self.lp_structure.eLengthItems):
-            if self.lp_structure.isON(individual, i):
+            if self.lp_structure.isON(flat_individual, i):
                 score += 1
         return score
 
