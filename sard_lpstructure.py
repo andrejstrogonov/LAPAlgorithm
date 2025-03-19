@@ -133,9 +133,12 @@ class LPStructureReduction(LPStructure):
 
     def right(self, pair):
         return pair[1]
+
 class SARDAlgorithm:
-    def __init__(self, lp_structure, initial_temperature=1000, cooling_rate=0.95, max_iterations=1000):
+    def __init__(self, lp_structure, min_support, min_confidence, initial_temperature=1000, cooling_rate=0.95, max_iterations=1000):
         self.lp_structure = lp_structure
+        self.min_support = min_support
+        self.min_confidence = min_confidence
         self.temperature = initial_temperature
         self.cooling_rate = cooling_rate
         self.max_iterations = max_iterations
@@ -180,6 +183,6 @@ class SARDAlgorithm:
 
 # Example usage
 lp_structure = LPStructure(10, 8)
-sard_algorithm = SARDAlgorithm(lp_structure)
+sard_algorithm = SARDAlgorithm(lp_structure, min_support=2, min_confidence=0.5)
 best_solution = sard_algorithm.anneal()
 print("Best Solution:", best_solution)
