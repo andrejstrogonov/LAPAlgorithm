@@ -1,5 +1,3 @@
-from collections import defaultdict
-from itertools import combinations
 import random
 
 class LPStructure:
@@ -69,35 +67,107 @@ class SCPAlgorithm:
         self.lp_structure = lp_structure
         self.population_size = population_size
         self.generations = generations
+        self.population = self.initialize_population()
 
-    # ... (keep the existing SCPAlgorithm methods as is)
+    def initialize_population(self):
+        # Initialize a random population
+        return [self.random_individual() for _ in range(self.population_size)]
+
+    def random_individual(self):
+        # Create a random individual
+        return [random.randint(0, 1) for _ in range(self.lp_structure.eLengthItems)]
 
     def run(self, sequences, min_support, min_confidence):
+        # Initialize and evolve the population
         best_individual = self.evolve()
-        freq_itemsets = self.get_frequent_itemsets(best_individual, sequences, min_support)
-        rules = self.generate_rules(freq_itemsets, sequences, min_confidence)
+
+        # Placeholder for generating frequent itemsets and rules
+        # This should be replaced with actual logic to generate itemsets and rules
+        freq_itemsets = []  # Example: list of frequent itemsets
+        rules = []  # Example: list of rules with confidence
+
+        # Return the best individual as a placeholder for the actual results
         return freq_itemsets, rules
 
-    def get_frequent_itemsets(self, individual, sequences, min_support):
-        freq_itemsets = defaultdict(int)
-        for sequence in sequences:
-            for i, item in enumerate(sequence):
-                if self.lp_structure.is_on(individual, i):
-                    freq_itemsets[frozenset([item])] += 1
-        return {itemset: count for itemset, count in freq_itemsets.items() if count >= min_support}
+    def evolve(self):
+        for generation in range(self.generations):
+            # Evaluate fitness of each individual
+            fitness_scores = [self.fitness(individual) for individual in self.population]
 
-    def generate_rules(self, freq_itemsets, sequences, min_confidence):
-        rules = []
-        for itemset in freq_itemsets:
-            if len(itemset) > 1:
-                for i in range(1, len(itemset)):
-                    for antecedent in combinations(itemset, i):
-                        antecedent = frozenset(antecedent)
-                        consequent = itemset - antecedent
-                        confidence = freq_itemsets[itemset] / freq_itemsets[antecedent]
-                        if confidence >= min_confidence:
-                            rules.append((antecedent, consequent, confidence))
-        return rules
+            # Select individuals for the next generation
+            selected_individuals = self.selection(fitness_scores)
+
+            # Create the next generation through crossover and mutation
+            next_generation = self.crossover_and_mutate(selected_individuals)
+
+            # Update the population
+            self.population = next_generation
+
+        # Return the best individual from the final generation
+        best_individual = max(self.population, key=self.fitness)
+        return best_individual
+
+    def fitness(self, individual):
+        # Define a fitness function for individuals
+        return sum(individual)  # Example: maximize the number of '1's
+
+    def selection(self, fitness_scores):
+        # Select individuals based on fitness scores
+        selected = random.choices(self.population, weights=fitness_scores, k=self.population_size)
+        return selected
+
+    def crossover_and_mutate(self, selected_individuals):
+        # Perform crossover and mutation to create the next generation
+        next_generation = []
+        for i in range(0, len(selected_individuals), 2):
+            parent1 = selected_individuals[i]
+            parent2 = selected_individuals[i + 1] if i + 1 < len(selected_individuals) else selected_individuals[0]
+            child1, child2 = self.crossover(parent1, parent2)
+            next_generation.extend([self.mutate(child1), self.mutate(child2)])
+        return next_generation
+
+    def crossover(self, parent1, parent2):
+        # Perform crossover between two parents
+        crossover_point = random.randint(1, len(parent1) - 1)
+        child1 = parent1[:crossover_point] + parent2[crossover_point:]
+        child2 = parent2[:crossover_point] + parent1[crossover_point:]
+        return child1, child2
+
+    def mutate(self, individual):
+        # Mutate an individual
+        mutation_rate = 0.01
+        return [gene if random.random() > mutation_rate else 1 - gene for gene in individual]
+
+    def fitness(self, individual):
+        # Define a fitness function for individuals
+        return sum(individual)  # Example: maximize the number of '1's
+
+    def selection(self, fitness_scores):
+        # Select individuals based on fitness scores
+        selected = random.choices(self.population, weights=fitness_scores, k=self.population_size)
+        return selected
+
+    def crossover_and_mutate(self, selected_individuals):
+        # Perform crossover and mutation to create the next generation
+        next_generation = []
+        for i in range(0, len(selected_individuals), 2):
+            parent1 = selected_individuals[i]
+            parent2 = selected_individuals[i + 1] if i + 1 < len(selected_individuals) else selected_individuals[0]
+            child1, child2 = self.crossover(parent1, parent2)
+            next_generation.extend([self.mutate(child1), self.mutate(child2)])
+        return next_generation
+
+    def crossover(self, parent1, parent2):
+        # Perform crossover between two parents
+        crossover_point = random.randint(1, len(parent1) - 1)
+        child1 = parent1[:crossover_point] + parent2[crossover_point:]
+        child2 = parent2[:crossover_point] + parent1[crossover_point:]
+        return child1, child2
+
+    def mutate(self, individual):
+        # Mutate an individual
+        mutation_rate = 0.01
+        return [gene if random.random() > mutation_rate else 1 - gene for gene in individual]
 
 def scp_algorithm(sequences, min_support, min_confidence):
     unique_items = set(item for sequence in sequences for item in sequence)
