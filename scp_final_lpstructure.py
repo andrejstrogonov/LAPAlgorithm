@@ -1,4 +1,6 @@
 import random
+import unittest
+
 
 class LPStructure:
     def __init__(self, eLengthItems, eItemBitSize):
@@ -195,3 +197,58 @@ lp_structure = LPStructure(10, 8)
 scp_algorithm = SCPAlgorithm(lp_structure)
 best_individual = scp_algorithm.evolve()
 print("Best Individual:", best_individual)
+
+class TestLPStructureReduction(unittest.TestCase):
+    def setUp(self):
+        self.lp_reduction = LPStructureReduction(3, 8, [([1, 2, 3], [4, 5, 6])])
+
+    def test_lReductionLC(self):
+        def dummy_event(pair, event_type, user_data):
+            pass
+
+        result = self.lp_reduction.lReductionLC(dummy_event, None)
+        self.assertEqual(result, 1)
+
+class TestSCPAlgorithm(unittest.TestCase):
+    def setUp(self):
+        self.lp = LPStructure(3, 8)
+        self.scp = SCPAlgorithm(self.lp, population_size=10, generations=5)
+
+    def test_generate_individual(self):
+        individual = self.scp.generate_individual()
+        self.assertEqual(len(individual), 3)
+        for item in individual:
+            self.assertEqual(len(item), 8)
+
+    def test_generate_population(self):
+        population = self.scp.generate_population()
+        self.assertEqual(len(population), 10)
+
+    def test_fitness(self):
+        individual = [[0b10000000, 0, 0], [0, 0, 0], [0, 0, 0]]
+        score = self.scp.fitness(individual)
+        self.assertEqual(score, 1)
+
+    def test_select(self):
+        population = self.scp.generate_population()
+        selected = self.scp.select(population)
+        self.assertEqual(len(selected), 2)
+
+    def test_crossover(self):
+        parent1 = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+        parent2 = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
+        child1, child2 = self.scp.crossover(parent1, parent2)
+        self.assertEqual(len(child1), 3)
+        self.assertEqual(len(child2), 3)
+
+    def test_mutate(self):
+        individual = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+        mutated = self.scp.mutate(individual)
+        self.assertEqual(len(mutated), 3)
+
+    def test_evolve(self):
+        best_individual = self.scp.evolve()
+        self.assertEqual(len(best_individual), 3)
+
+if __name__ == '__main__':
+    unittest.main()
