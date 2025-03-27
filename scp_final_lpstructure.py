@@ -97,9 +97,11 @@ class SCPAlgorithm:
         return ranked[:int(0.2 * len(ranked))]  # Select top 20%
 
     def crossover(self, parent1, parent2):
-        point = random.randint(1, len(parent1) - 1)
-        child1 = parent1[:point] + parent2[point:]
-        child2 = parent2[:point] + parent1[point:]
+        child1 = [item[:] for item in parent1]  # Deep copy of parent1
+        child2 = [item[:] for item in parent2]  # Deep copy of parent2
+        for i in range(self.lp_structure.eLengthItems):
+            self.lp_structure.lJoin(child1[i], parent2[i])
+            self.lp_structure.lJoin(child2[i], parent1[i])
         return child1, child2
 
     def mutate(self, individual):
