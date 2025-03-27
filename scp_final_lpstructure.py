@@ -63,77 +63,6 @@ class LPStructure:
         nMask = 1 << (self.eItemBitSize - 1 - nBit)
         return bool(eTest[nItem] & nMask)
 
-class LPStructureReduction(LPStructure):
-    def __init__(self, eLengthItems, eItemBitSize, prContainer):
-        super().__init__(eLengthItems, eItemBitSize)
-        self.prContainer = prContainer
-
-    def lReductionLC(self, onEvent, dwUser):
-        # Удаление логически связанных пар
-        self.prContainer = [pair for pair in self.prContainer if not self.isLConnected(pair, onEvent, dwUser)]
-        return len(self.prContainer)
-
-    def isLConnected(self, aPair, onEvent, dwUser):
-        eRight = self.right(aPair)  # Элемент, который требуется получить при выводе
-        eRes = self.left(aPair)  # Текущий результат полного прямого вывода
-
-        if not eRight or not eRes:
-            return False
-
-        # Проверка на "подчинённую" пару
-        if self.LE(eRight, eRes):
-            return True
-
-        # Память для результата логического вывода
-        bRes = bytearray(eRes)
-        eRes = bRes
-
-        # Вектор для возможного запоминания цепочки вывода
-        prSecVector = []
-
-        res = False
-        wasAdded = True
-
-        # Копия исходного множества пар
-        tmpContainer = list(self.prContainer)
-        tmpContainer.remove(aPair)  # Будем искать логическую связь в остальных парах
-
-        while not res and wasAdded:
-            wasAdded = False
-            i = 0
-            while i < len(tmpContainer):
-                prCurr = tmpContainer[i]
-                if self.LE(self.left(prCurr), eRes):  # left(prCurr) <= eRes
-                    # Задан режим запоминания вывода - сохраняем пары, вносящие вклад
-                    if onEvent and not self.LE(self.right(prCurr), eRes):
-                        prSecVector.append(prCurr)
-
-                    self.lJoin(eRes, self.right(prCurr))  # eRes |= right(prCurr)
-                    wasAdded = True  # Результат увеличился
-
-                    tmpContainer.pop(i)  # Каждая пара используется единственный раз
-
-                    if self.LE(eRight, eRes):
-                        res = True
-                        break  # eRight <= eRes
-                else:
-                    i += 1
-
-        # Не зря запоминали вывод - сообщаем о результатах
-        if res and onEvent:
-            onEvent(aPair, "etRedundant", dwUser)  # Лишняя пара
-            # Её вывод
-            for k in prSecVector:
-                onEvent(k, "etInference", dwUser)
-
-        return res
-
-    # Вспомогательные методы для работы с парами
-    def left(self, pair):
-        return pair[0]
-
-    def right(self, pair):
-        return pair[1]
 
 class SCPAlgorithm:
     def __init__(self, lp_structure, population_size=100, generations=100):
@@ -198,16 +127,6 @@ scp_algorithm = SCPAlgorithm(lp_structure)
 best_individual = scp_algorithm.evolve()
 print("Best Individual:", best_individual)
 
-class TestLPStructureReduction(unittest.TestCase):
-    def setUp(self):
-        self.lp_reduction = LPStructureReduction(3, 8, [([1, 2, 3], [4, 5, 6])])
-
-    def test_lReductionLC(self):
-        def dummy_event(pair, event_type, user_data):
-            pass
-
-        result = self.lp_reduction.lReductionLC(dummy_event, None)
-        self.assertEqual(result, 1)
 
 class TestSCPAlgorithm(unittest.TestCase):
     def setUp(self):
