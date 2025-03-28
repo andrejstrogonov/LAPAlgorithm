@@ -1,7 +1,4 @@
-
-import random  # Import the entire random module instead of just the random function
-
-
+import random
 class LPStructure:
     def __init__(self, eLengthItems, eItemBitSize):
         self.eLengthItems = eLengthItems
