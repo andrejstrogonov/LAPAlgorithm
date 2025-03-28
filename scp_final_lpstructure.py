@@ -1,4 +1,6 @@
 import random
+
+
 class LPStructure:
     def __init__(self, eLengthItems, eItemBitSize):
         self.eLengthItems = eLengthItems
@@ -59,6 +61,20 @@ class LPStructure:
         nBit = nAtom % self.eItemBitSize
         nMask = 1 << (self.eItemBitSize - 1 - nBit)
         return bool(eTest[nItem] & nMask)
+
+    def to_binary_string(self, individual):
+        """
+        Convert an individual to a binary string representation
+        """
+        binary_representation = []
+        for item in individual:
+            # Convert to binary and remove '0b' prefix
+            binary = bin(item)[2:]
+            # Pad with leading zeros to match eItemBitSize
+            padded_binary = binary.zfill(self.eItemBitSize)
+            binary_representation.append(padded_binary)
+
+        return binary_representation
 
 
 class SCPAlgorithm:
@@ -144,4 +160,21 @@ class SCPAlgorithm:
 lp_structure = LPStructure(10, 8)
 scp_algorithm = SCPAlgorithm(lp_structure)
 best_individual = scp_algorithm.evolve()
-print("Best Individual:", best_individual)
+
+# Print the best individual in decimal format
+print("Best Individual (decimal):", best_individual)
+
+# Convert and print the best individual in binary format
+binary_representation = lp_structure.to_binary_string(best_individual)
+print("Best Individual (binary):")
+for i, binary in enumerate(binary_representation):
+    print(f"Item {i}: {binary}")
+
+# Print a more visual representation
+print("\nBinary Matrix Representation:")
+for binary in binary_representation:
+    print(' '.join(binary))
+
+# Calculate and print the fitness of the best individual
+fitness_value = scp_algorithm.fitness(best_individual)
+print(f"\nFitness value: {fitness_value} (number of bits set to 1)")
