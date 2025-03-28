@@ -129,7 +129,6 @@ scp_algorithm = SCPAlgorithm(lp_structure)
 best_individual = scp_algorithm.evolve()
 print("Best Individual:", best_individual)
 
-
 class TestSCPAlgorithm(unittest.TestCase):
     def setUp(self):
         self.lp = LPStructure(3, 8)
