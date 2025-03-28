@@ -71,7 +71,66 @@ sequences = [
     ['основная_продолжительность=62', 'фактор=минус_12', 'продолжительность=50'],
     ['основная_продолжительность=60', 'фактор=минус_12', 'продолжительность=48']
 ]
+import pickle
+import os
 
-with open('knowledge_base.csv', 'w', newline='') as file:
-    writer = csv.writer(file)
-    writer.writerows(sequences)
+
+def save_knowledge_base_to_binary(sequences, output_file="knowledge_base.bin"):
+    """
+    Saves the knowledge base sequences to a binary file using pickle serialization.
+
+    Args:
+        sequences (list): List of sequence lists containing knowledge base rules
+        output_file (str): Path to the output binary file
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        with open(output_file, 'wb') as f:
+            pickle.dump(sequences, f)
+
+        file_size = os.path.getsize(output_file)
+        print(f"Knowledge base successfully saved to {output_file}")
+        print(f"File size: {file_size} bytes")
+        return True
+    except Exception as e:
+        print(f"Error saving knowledge base: {e}")
+        return False
+
+
+def load_knowledge_base_from_binary(input_file="knowledge_base.bin"):
+    """
+    Loads the knowledge base sequences from a binary file.
+
+    Args:
+        input_file (str): Path to the binary file
+
+    Returns:
+        list: The loaded sequences or None if an error occurred
+    """
+    try:
+        with open(input_file, 'rb') as f:
+            sequences = pickle.load(f)
+        print(f"Knowledge base successfully loaded from {input_file}")
+        return sequences
+    except Exception as e:
+        print(f"Error loading knowledge base: {e}")
+        return None
+
+
+# Import the sequences from the original file
+from knowladge_base_py import sequences
+
+# Save the sequences to a binary file
+if __name__ == "__main__":
+    save_knowledge_base_to_binary(sequences)
+
+    # Verify by loading the data back
+    loaded_sequences = load_knowledge_base_from_binary()
+
+    # Check if the loaded data matches the original
+    if loaded_sequences == sequences:
+        print("Verification successful: Loaded data matches original data")
+    else:
+        print("Verification failed: Loaded data does not match original data")
