@@ -18,12 +18,15 @@ class ExpertSystem:
     def add_fact(self, fact):
         self.facts.add(fact)
 
-    def backward_inference(self, goal):
+    def backward_inference(self, goal, scp_algorithm):
         if goal in self.facts:
             return True
 
-        for rule in self.knowledge_base:
-            if rule.conclusion == goal and all(self.backward_inference(premise) for premise in rule.premises):
+        # Prioritize rules using SCP algorithm
+        prioritized_rules = scp_algorithm.prioritize_rules(self.knowledge_base, goal)
+
+        for rule in prioritized_rules:
+            if rule.conclusion == goal and all(self.backward_inference(premise, scp_algorithm) for premise in rule.premises):
                 return True
 
         return False
@@ -114,29 +117,16 @@ class SCPAlgorithm:
 
         return self.select(population)[0]
 
+    def prioritize_rules(self, rules, goal):
+        # Example prioritization logic using SCP algorithm
+        # This can be customized based on specific criteria
+        return sorted(rules, key=lambda rule: self.fitness(self.generate_individual()), reverse=True)
+
 
 # Example usage
 lp_structure = LPStructure(10, 8)
 scp_algorithm = SCPAlgorithm(lp_structure)
 best_individual = scp_algorithm.evolve()
-
-# Print the best individual in decimal format
-print("Best Individual (decimal):", best_individual)
-
-# Convert and print the best individual in binary format
-binary_representation = lp_structure.to_binary_string(best_individual)
-print("Best Individual (binary):")
-for i, binary in enumerate(binary_representation):
-    print(f"Item {i}: {binary}")
-
-# Print a more visual representation
-print("\nBinary Matrix Representation:")
-for binary in binary_representation:
-    print(' '.join(binary))
-
-# Calculate and print the fitness of the best individual
-fitness_value = scp_algorithm.fitness(best_individual)
-print(f"\nFitness value: {fitness_value} (number of bits set to 1)")
 
 # Expert System Example
 expert_system = ExpertSystem()
@@ -145,5 +135,5 @@ expert_system.add_rule(["A"], "B")
 expert_system.add_rule(["B"], "C")
 
 goal = "C"
-result = expert_system.backward_inference(goal)
+result = expert_system.backward_inference(goal, scp_algorithm)
 print(f"Goal '{goal}' is {'proven' if result else 'not proven'}")
