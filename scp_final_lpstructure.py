@@ -1,5 +1,45 @@
+
 import random
 
+
+class Rule:
+    def __init__(self, premises, conclusion):
+        self.premises = premises
+        self.conclusion = conclusion
+
+
+class ExpertSystem:
+    def __init__(self):
+        self.knowledge_base = []
+        self.facts = set()
+
+    def add_rule(self, premises, conclusion):
+        rule = Rule(premises, conclusion)
+        self.knowledge_base.append(rule)
+
+    def add_fact(self, fact):
+        self.facts.add(fact)
+
+    def backward_inference(self, goal):
+        # Example usage of SCPAlgorithm
+        lp_structure = LPStructure(10, 8)
+        scp_algorithm = SCPAlgorithm(lp_structure)
+        best_individual = scp_algorithm.evolve()
+
+        if goal in self.facts:
+            return True
+
+        for rule in self.knowledge_base:
+            if rule.conclusion == goal:
+                all_premises_true = True
+                for premise in rule.premises:
+                    if not self.backward_inference(premise):
+                        all_premises_true = False
+                        break
+                if all_premises_true:
+                    return True
+
+        return False
 
 class LPStructure:
     def __init__(self, eLengthItems, eItemBitSize):
@@ -63,17 +103,11 @@ class LPStructure:
         return bool(eTest[nItem] & nMask)
 
     def to_binary_string(self, individual):
-        """
-        Convert an individual to a binary string representation
-        """
         binary_representation = []
         for item in individual:
-            # Convert to binary and remove '0b' prefix
             binary = bin(item)[2:]
-            # Pad with leading zeros to match eItemBitSize
             padded_binary = binary.zfill(self.eItemBitSize)
             binary_representation.append(padded_binary)
-
         return binary_representation
 
 
@@ -84,20 +118,16 @@ class SCPAlgorithm:
         self.generations = generations
 
     def generate_individual(self):
-        # Generate an individual as a list of integers
         individual = []
         for _ in range(self.lp_structure.eLengthItems):
-            # Generate a random integer with appropriate bit size
             item = random.randint(0, (1 << self.lp_structure.eItemBitSize) - 1)
             individual.append(item)
         return individual
 
     def generate_population(self):
-        population = [self.generate_individual() for _ in range(self.population_size)]
-        return population
+        return [self.generate_individual() for _ in range(self.population_size)]
 
     def fitness(self, individual):
-        # Calculate fitness based on the number of bits set to 1
         score = 0
         for i in range(len(individual) * self.lp_structure.eItemBitSize):
             if self.lp_structure.isON(individual, i):
@@ -106,29 +136,21 @@ class SCPAlgorithm:
 
     def select(self, population):
         scored = [(self.fitness(individual), individual) for individual in population]
-        scored.sort(reverse=True)  # Higher fitness is better
+        scored.sort(reverse=True)
         ranked = [individual for (score, individual) in scored]
-        return ranked[:int(0.2 * len(ranked))]  # Select top 20%
+        return ranked[:int(0.2 * len(ranked))]
 
     def crossover(self, parent1, parent2):
-        child1 = parent1.copy()  # Copy parent1
-        child2 = parent2.copy()  # Copy parent2
-
-        # Create temporary lists for lJoin operation
-        temp1 = child1.copy()
-        temp2 = child2.copy()
-
-        # Perform crossover using lJoin
+        child1 = parent1.copy()
+        child2 = parent2.copy()
         self.lp_structure.lJoin(child1, parent2)
         self.lp_structure.lJoin(child2, parent1)
-
         return child1, child2
 
     def mutate(self, individual):
         mutated = individual.copy()
         for i in range(len(mutated)):
-            if random.random() < 0.01:  # 1% chance of mutation
-                # Flip a random bit
+            if random.random() < 0.01:
                 bit_position = random.randint(0, self.lp_structure.eItemBitSize - 1)
                 mutated[i] ^= (1 << bit_position)
         return mutated
@@ -147,7 +169,6 @@ class SCPAlgorithm:
                     if len(next_generation) < self.population_size:
                         next_generation.append(child2)
                 else:
-                    # If not enough selected individuals, add a new random one
                     next_generation.append(self.generate_individual())
 
             population = [self.mutate(individual) for individual in next_generation]
@@ -178,3 +199,13 @@ for binary in binary_representation:
 # Calculate and print the fitness of the best individual
 fitness_value = scp_algorithm.fitness(best_individual)
 print(f"\nFitness value: {fitness_value} (number of bits set to 1)")
+
+# Expert System Example
+expert_system = ExpertSystem()
+expert_system.add_fact("A")
+expert_system.add_rule(["A"], "B")
+expert_system.add_rule(["B"], "C")
+
+goal = "C"
+result = expert_system.backward_inference(goal)
+print(f"Goal '{goal}' is {'proven' if result else 'not proven'}")
