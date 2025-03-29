@@ -18,7 +18,10 @@ class ExpertSystem:
     def add_fact(self, fact):
         self.facts.add(fact)
 
-    def backward_inference(self, goal, scp_algorithm):
+    def backward_inference(self, goal, scp_algorithm, used_rules=None):
+        if used_rules is None:
+            used_rules = []
+
         if goal in self.facts:
             return True
 
@@ -26,8 +29,10 @@ class ExpertSystem:
         prioritized_rules = scp_algorithm.prioritize_rules(self.knowledge_base, goal)
 
         for rule in prioritized_rules:
-            if rule.conclusion == goal and all(self.backward_inference(premise, scp_algorithm) for premise in rule.premises):
-                return True
+            if rule.conclusion == goal:
+                if all(self.backward_inference(premise, scp_algorithm, used_rules) for premise in rule.premises):
+                    used_rules.append(rule)
+                    return True
 
         return False
 
@@ -139,12 +144,25 @@ expert_system.add_rule(["B"], "C")
 expert_system.add_rule(["D"], "E")
 expert_system.add_rule(["E", "B"], "F")
 
-# Define a goal and check if it can be proven
 goal = "F"
-result = expert_system.backward_inference(goal, scp_algorithm)
+used_rules = []
+result = expert_system.backward_inference(goal, scp_algorithm, used_rules)
 print(f"Goal '{goal}' is {'proven' if result else 'not proven'}")
+
+# Print the rules used to achieve the goal
+if result:
+    print("Rules used to achieve the goal:")
+    for rule in used_rules:
+        print(f"Premises: {rule.premises} -> Conclusion: {rule.conclusion}")
 
 # Another goal
 goal = "C"
-result = expert_system.backward_inference(goal, scp_algorithm)
+used_rules = []
+result = expert_system.backward_inference(goal, scp_algorithm, used_rules)
 print(f"Goal '{goal}' is {'proven' if result else 'not proven'}")
+
+# Print the rules used to achieve the goal
+if result:
+    print("Rules used to achieve the goal:")
+    for rule in used_rules:
+        print(f"Premises: {rule.premises} -> Conclusion: {rule.conclusion}")
