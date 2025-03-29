@@ -131,9 +131,20 @@ best_individual = scp_algorithm.evolve()
 # Expert System Example
 expert_system = ExpertSystem()
 expert_system.add_fact("A")
+expert_system.add_fact("D")
+
+# Adding rules
 expert_system.add_rule(["A"], "B")
 expert_system.add_rule(["B"], "C")
+expert_system.add_rule(["D"], "E")
+expert_system.add_rule(["E", "B"], "F")
 
+# Define a goal and check if it can be proven
+goal = "F"
+result = expert_system.backward_inference(goal, scp_algorithm)
+print(f"Goal '{goal}' is {'proven' if result else 'not proven'}")
+
+# Another goal
 goal = "C"
 result = expert_system.backward_inference(goal, scp_algorithm)
 print(f"Goal '{goal}' is {'proven' if result else 'not proven'}")
