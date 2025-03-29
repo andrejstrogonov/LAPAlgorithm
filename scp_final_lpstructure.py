@@ -1,4 +1,3 @@
-
 import random
 
 
@@ -14,32 +13,21 @@ class ExpertSystem:
         self.facts = set()
 
     def add_rule(self, premises, conclusion):
-        rule = Rule(premises, conclusion)
-        self.knowledge_base.append(rule)
+        self.knowledge_base.append(Rule(premises, conclusion))
 
     def add_fact(self, fact):
         self.facts.add(fact)
 
     def backward_inference(self, goal):
-        # Example usage of SCPAlgorithm
-        lp_structure = LPStructure(10, 8)
-        scp_algorithm = SCPAlgorithm(lp_structure)
-        best_individual = scp_algorithm.evolve()
-
         if goal in self.facts:
             return True
 
         for rule in self.knowledge_base:
-            if rule.conclusion == goal:
-                all_premises_true = True
-                for premise in rule.premises:
-                    if not self.backward_inference(premise):
-                        all_premises_true = False
-                        break
-                if all_premises_true:
-                    return True
+            if rule.conclusion == goal and all(self.backward_inference(premise) for premise in rule.premises):
+                return True
 
         return False
+
 
 class LPStructure:
     def __init__(self, eLengthItems, eItemBitSize):
@@ -47,32 +35,16 @@ class LPStructure:
         self.eItemBitSize = eItemBitSize
 
     def EQ(self, ls, rs):
-        for i in range(self.eLengthItems):
-            if ls[i] != rs[i]:
-                return False
-        return True
+        return all(ls[i] == rs[i] for i in range(self.eLengthItems))
 
     def EZ(self, ls):
-        for i in range(self.eLengthItems):
-            if ls[i]:
-                return False
-        return True
+        return all(not ls[i] for i in range(self.eLengthItems))
 
     def LE(self, ls, rs):
-        for i in range(self.eLengthItems):
-            if (ls[i] | rs[i]) != rs[i]:
-                return False
-        return True
+        return all((ls[i] | rs[i]) == rs[i] for i in range(self.eLengthItems))
 
     def LT(self, ls, rs):
-        bExistLT = False
-        for i in range(self.eLengthItems):
-            if (ls[i] | rs[i]) == rs[i]:
-                if ls[i] != rs[i]:
-                    bExistLT = True
-            else:
-                return False
-        return bExistLT
+        return any((ls[i] | rs[i]) == rs[i] and ls[i] != rs[i] for i in range(self.eLengthItems))
 
     def lJoin(self, ls, rs):
         for i in range(self.eLengthItems):
@@ -83,18 +55,10 @@ class LPStructure:
             ls[i] &= rs[i]
 
     def lDiff(self, ls, rs):
-        res = False
-        for i in range(self.eLengthItems):
-            if ls[i] & rs[i]:
-                ls[i] &= ~rs[i]
-                res = True
-        return res
+        return any(ls[i] & rs[i] and not (ls[i] & ~rs[i]) for i in range(self.eLengthItems))
 
     def isMeet(self, ls, rs):
-        for i in range(self.eLengthItems):
-            if ls[i] & rs[i]:
-                return True
-        return False
+        return any(ls[i] & rs[i] for i in range(self.eLengthItems))
 
     def isON(self, eTest, nAtom):
         nItem = nAtom // self.eItemBitSize
@@ -103,12 +67,7 @@ class LPStructure:
         return bool(eTest[nItem] & nMask)
 
     def to_binary_string(self, individual):
-        binary_representation = []
-        for item in individual:
-            binary = bin(item)[2:]
-            padded_binary = binary.zfill(self.eItemBitSize)
-            binary_representation.append(padded_binary)
-        return binary_representation
+        return [bin(item)[2:].zfill(self.eItemBitSize) for item in individual]
 
 
 class SCPAlgorithm:
@@ -118,42 +77,25 @@ class SCPAlgorithm:
         self.generations = generations
 
     def generate_individual(self):
-        individual = []
-        for _ in range(self.lp_structure.eLengthItems):
-            item = random.randint(0, (1 << self.lp_structure.eItemBitSize) - 1)
-            individual.append(item)
-        return individual
+        return [random.randint(0, (1 << self.lp_structure.eItemBitSize) - 1) for _ in range(self.lp_structure.eLengthItems)]
 
     def generate_population(self):
         return [self.generate_individual() for _ in range(self.population_size)]
 
     def fitness(self, individual):
-        score = 0
-        for i in range(len(individual) * self.lp_structure.eItemBitSize):
-            if self.lp_structure.isON(individual, i):
-                score += 1
-        return score
+        return sum(1 for i in range(len(individual) * self.lp_structure.eItemBitSize) if self.lp_structure.isON(individual, i))
 
     def select(self, population):
-        scored = [(self.fitness(individual), individual) for individual in population]
-        scored.sort(reverse=True)
-        ranked = [individual for (score, individual) in scored]
-        return ranked[:int(0.2 * len(ranked))]
+        return sorted(population, key=self.fitness, reverse=True)[:int(0.2 * len(population))]
 
     def crossover(self, parent1, parent2):
-        child1 = parent1.copy()
-        child2 = parent2.copy()
+        child1, child2 = parent1.copy(), parent2.copy()
         self.lp_structure.lJoin(child1, parent2)
         self.lp_structure.lJoin(child2, parent1)
         return child1, child2
 
     def mutate(self, individual):
-        mutated = individual.copy()
-        for i in range(len(mutated)):
-            if random.random() < 0.01:
-                bit_position = random.randint(0, self.lp_structure.eItemBitSize - 1)
-                mutated[i] ^= (1 << bit_position)
-        return mutated
+        return [item ^ (1 << random.randint(0, self.lp_structure.eItemBitSize - 1)) if random.random() < 0.01 else item for item in individual]
 
     def evolve(self):
         population = self.generate_population()
@@ -164,17 +106,13 @@ class SCPAlgorithm:
             while len(next_generation) < self.population_size:
                 if len(selected) >= 2:
                     parent1, parent2 = random.sample(selected, 2)
-                    child1, child2 = self.crossover(parent1, parent2)
-                    next_generation.append(child1)
-                    if len(next_generation) < self.population_size:
-                        next_generation.append(child2)
+                    next_generation.extend(self.crossover(parent1, parent2))
                 else:
                     next_generation.append(self.generate_individual())
 
             population = [self.mutate(individual) for individual in next_generation]
 
-        best_individual = self.select(population)[0]
-        return best_individual
+        return self.select(population)[0]
 
 
 # Example usage
