@@ -1,3 +1,6 @@
+
+import timeit
+
 class Rule:
     def __init__(self, premises, conclusion):
         self.premises = premises
@@ -35,6 +38,11 @@ class ExpertSystem:
 
         return False
 
+def measure_inference_time(expert_system, goal):
+    used_rules = []
+    result = expert_system.backward_inference(goal, used_rules)
+    return result, used_rules
+
 # Example usage
 if __name__ == "__main__":
     expert_system = ExpertSystem()
@@ -47,10 +55,12 @@ if __name__ == "__main__":
     expert_system.add_rule(["D"], "E")
     expert_system.add_rule(["E", "B"], "F")
 
+    # Measure time for goal "F"
     goal = "F"
-    used_rules = []
-    result = expert_system.backward_inference(goal, used_rules)
+    time_taken = timeit.timeit(lambda: measure_inference_time(expert_system, goal), number=1)
+    result, used_rules = measure_inference_time(expert_system, goal)
     print(f"Goal '{goal}' is {'proven' if result else 'not proven'}")
+    print(f"Time taken: {time_taken:.6f} seconds")
 
     # Print the rules used to achieve the goal
     if result:
@@ -58,11 +68,12 @@ if __name__ == "__main__":
         for rule in used_rules:
             print(f"Premises: {rule.premises} -> Conclusion: {rule.conclusion}")
 
-    # Another goal
+    # Measure time for another goal "C"
     goal = "C"
-    used_rules = []
-    result = expert_system.backward_inference(goal, used_rules)
+    time_taken = timeit.timeit(lambda: measure_inference_time(expert_system, goal), number=1)
+    result, used_rules = measure_inference_time(expert_system, goal)
     print(f"Goal '{goal}' is {'proven' if result else 'not proven'}")
+    print(f"Time taken: {time_taken:.6f} seconds")
 
     # Print the rules used to achieve the goal
     if result:
