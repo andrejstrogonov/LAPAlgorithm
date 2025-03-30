@@ -1,11 +1,10 @@
 import random
-
+import timeit
 
 class Rule:
     def __init__(self, premises, conclusion):
         self.premises = premises
         self.conclusion = conclusion
-
 
 class ExpertSystem:
     def __init__(self):
@@ -35,7 +34,6 @@ class ExpertSystem:
                     return True
 
         return False
-
 
 class LPStructure:
     def __init__(self, eLengthItems, eItemBitSize):
@@ -76,7 +74,6 @@ class LPStructure:
 
     def to_binary_string(self, individual):
         return [bin(item)[2:].zfill(self.eItemBitSize) for item in individual]
-
 
 class SCPAlgorithm:
     def __init__(self, lp_structure, population_size=100, generations=100):
@@ -127,6 +124,10 @@ class SCPAlgorithm:
         # This can be customized based on specific criteria
         return sorted(rules, key=lambda rule: self.fitness(self.generate_individual()), reverse=True)
 
+def measure_inference_time(expert_system, goal, scp_algorithm):
+    used_rules = []
+    result = expert_system.backward_inference(goal, scp_algorithm, used_rules)
+    return result, used_rules
 
 # Example usage
 lp_structure = LPStructure(10, 8)
@@ -144,10 +145,12 @@ expert_system.add_rule(["B"], "C")
 expert_system.add_rule(["D"], "E")
 expert_system.add_rule(["E", "B"], "F")
 
+# Measure time for goal "F"
 goal = "F"
-used_rules = []
-result = expert_system.backward_inference(goal, scp_algorithm, used_rules)
+time_taken = timeit.timeit(lambda: measure_inference_time(expert_system, goal, scp_algorithm), number=1)
+result, used_rules = measure_inference_time(expert_system, goal, scp_algorithm)
 print(f"Goal '{goal}' is {'proven' if result else 'not proven'}")
+print(f"Time taken: {time_taken:.6f} seconds")
 
 # Print the rules used to achieve the goal
 if result:
@@ -155,11 +158,12 @@ if result:
     for rule in used_rules:
         print(f"Premises: {rule.premises} -> Conclusion: {rule.conclusion}")
 
-# Another goal
+# Measure time for another goal "C"
 goal = "C"
-used_rules = []
-result = expert_system.backward_inference(goal, scp_algorithm, used_rules)
+time_taken = timeit.timeit(lambda: measure_inference_time(expert_system, goal, scp_algorithm), number=1)
+result, used_rules = measure_inference_time(expert_system, goal, scp_algorithm)
 print(f"Goal '{goal}' is {'proven' if result else 'not proven'}")
+print(f"Time taken: {time_taken:.6f} seconds")
 
 # Print the rules used to achieve the goal
 if result:
