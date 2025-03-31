@@ -107,28 +107,44 @@ def benchmark_comparison(num_facts_list, num_rules_list):
 
         # Measure SCP performance
         scp_used_rules = []
-        scp_time = timeit.timeit(
-            lambda: expert_system.backward_inference(goal, scp_algorithm, scp_used_rules),
-            number=5
-        ) / 5  # Average of 5 runs
+
+        def run_scp_inference():
+            scp_used_rules.clear()  # Clear previous results
+            return expert_system.backward_inference(goal, scp_algorithm, scp_used_rules)
+
+        scp_time = timeit.timeit(run_scp_inference, number=5) / 5  # Average of 5 runs
+
+        # Run one more time to get the final rules used
+        run_scp_inference()
+        scp_rule_count = len(scp_used_rules)
 
         # Measure classic performance
         classic_used_rules = []
-        classic_time = timeit.timeit(
-            lambda: classic_system.backward_inference_classic(goal, classic_used_rules),
-            number=5
-        ) / 5  # Average of 5 runs
+
+        def run_classic_inference():
+            classic_used_rules.clear()  # Clear previous results
+            return classic_system.backward_inference_classic(goal, classic_used_rules)
+
+        classic_time = timeit.timeit(run_classic_inference, number=5) / 5  # Average of 5 runs
+
+        # Run one more time to get the final rules used
+        run_classic_inference()
+        classic_rule_count = len(classic_used_rules)
 
         # Record results
         scp_times.append(scp_time)
         classic_times.append(classic_time)
-        scp_rules_used.append(len(scp_used_rules))
-        classic_rules_used.append(len(classic_used_rules))
+        scp_rules_used.append(scp_rule_count)
+        classic_rules_used.append(classic_rule_count)
 
-        print(f"  SCP: {scp_time:.6f}s, Rules used: {len(scp_used_rules)}")
-        print(f"  Classic: {classic_time:.6f}s, Rules used: {len(classic_used_rules)}")
-        print(
-            f"  Improvement: {(classic_time / scp_time):.2f}x faster, {(classic_rules_used[-1] / scp_rules_used[-1]):.2f}x fewer rules")
+        print(f"  SCP: {scp_time:.6f}s, Rules used: {scp_rule_count}")
+        print(f"  Classic: {classic_time:.6f}s, Rules used: {classic_rule_count}")
+
+        # Avoid division by zero
+        time_improvement = (classic_time / scp_time) if scp_time > 0 else float('inf')
+        rule_improvement = (classic_rule_count / scp_rule_count) if scp_rule_count > 0 else float('inf')
+
+        print(f"  Improvement: {time_improvement:.2f}x faster, {rule_improvement:.2f}x fewer rules")
         print()
 
     return scp_times, classic_times, scp_rules_used, classic_rules_used
@@ -181,4 +197,3 @@ if __name__ == "__main__":
     print("========")
     print(f"Average speedup: {sum(c / s for c, s in zip(classic_times, scp_times)) / len(classic_times):.2f}x")
     print(f"Average rule reduction: {sum(c / s for c, s in zip(classic_rules, scp_rules)) / len(classic_rules):.2f}x")
-
