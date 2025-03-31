@@ -181,3 +181,4 @@ if __name__ == "__main__":
     print("========")
     print(f"Average speedup: {sum(c / s for c, s in zip(classic_times, scp_times)) / len(classic_times):.2f}x")
     print(f"Average rule reduction: {sum(c / s for c, s in zip(classic_rules, scp_rules)) / len(classic_rules):.2f}x")
+
