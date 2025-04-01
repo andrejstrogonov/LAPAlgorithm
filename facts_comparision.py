@@ -1,3 +1,4 @@
+
 import random
 import timeit
 import matplotlib.pyplot as plt
@@ -9,17 +10,20 @@ class ClassicExpertSystem(ExpertSystem):
     A classic expert system that uses simple backward chaining without SCP optimization
     """
 
-    def backward_inference_classic(self, goal, used_rules=None):
+    def backward_inference_classic(self, goal, used_rules=None, used_facts=None):
         if used_rules is None:
             used_rules = []
+        if used_facts is None:
+            used_facts = set()
 
         if goal in self.facts:
+            used_facts.add(goal)
             return True
 
         # Classic backward chaining - try all rules in the order they were added
         for rule in self.knowledge_base:
             if rule.conclusion == goal:
-                if all(self.backward_inference_classic(premise, used_rules) for premise in rule.premises):
+                if all(self.backward_inference_classic(premise, used_rules, used_facts) for premise in rule.premises):
                     used_rules.append(rule)
                     return True
 
@@ -84,6 +88,8 @@ def benchmark_comparison(num_facts_list, num_rules_list):
     classic_times = []
     scp_rules_used = []
     classic_rules_used = []
+    scp_facts_used = []
+    classic_facts_used = []
 
     for num_facts, num_rules in zip(num_facts_list, num_rules_list):
         print(f"Testing with {num_facts} facts and {num_rules} rules...")
@@ -107,54 +113,63 @@ def benchmark_comparison(num_facts_list, num_rules_list):
 
         # Measure SCP performance
         scp_used_rules = []
+        scp_used_facts = set()
 
         def run_scp_inference():
             scp_used_rules.clear()  # Clear previous results
+            scp_used_facts.clear()
             return expert_system.backward_inference(goal, scp_algorithm, scp_used_rules)
 
         scp_time = timeit.timeit(run_scp_inference, number=5) / 5  # Average of 5 runs
 
-        # Run one more time to get the final rules used
+        # Run one more time to get the final rules and facts used
         run_scp_inference()
         scp_rule_count = len(scp_used_rules)
+        scp_fact_count = len(scp_used_facts)
 
         # Measure classic performance
         classic_used_rules = []
+        classic_used_facts = set()
 
         def run_classic_inference():
             classic_used_rules.clear()  # Clear previous results
-            return classic_system.backward_inference_classic(goal, classic_used_rules)
+            classic_used_facts.clear()
+            return classic_system.backward_inference_classic(goal, classic_used_rules, classic_used_facts)
 
         classic_time = timeit.timeit(run_classic_inference, number=5) / 5  # Average of 5 runs
 
-        # Run one more time to get the final rules used
+        # Run one more time to get the final rules and facts used
         run_classic_inference()
         classic_rule_count = len(classic_used_rules)
+        classic_fact_count = len(classic_used_facts)
 
         # Record results
         scp_times.append(scp_time)
         classic_times.append(classic_time)
         scp_rules_used.append(scp_rule_count)
         classic_rules_used.append(classic_rule_count)
+        scp_facts_used.append(scp_fact_count)
+        classic_facts_used.append(classic_fact_count)
 
-        print(f"  SCP: {scp_time:.6f}s, Rules used: {scp_rule_count}")
-        print(f"  Classic: {classic_time:.6f}s, Rules used: {classic_rule_count}")
+        print(f"  SCP: {scp_time:.6f}s, Rules used: {scp_rule_count}, Facts used: {scp_fact_count}")
+        print(f"  Classic: {classic_time:.6f}s, Rules used: {classic_rule_count}, Facts used: {classic_fact_count}")
 
         # Avoid division by zero
         time_improvement = (classic_time / scp_time) if scp_time > 0 else float('inf')
         rule_improvement = (classic_rule_count / scp_rule_count) if scp_rule_count > 0 else float('inf')
+        fact_improvement = (classic_fact_count / scp_fact_count) if scp_fact_count > 0 else float('inf')
 
-        print(f"  Improvement: {time_improvement:.2f}x faster, {rule_improvement:.2f}x fewer rules")
+        print(f"  Improvement: {time_improvement:.2f}x faster, {rule_improvement:.2f}x fewer rules, {fact_improvement:.2f}x fewer facts")
         print()
 
-    return scp_times, classic_times, scp_rules_used, classic_rules_used
+    return scp_times, classic_times, scp_rules_used, classic_rules_used, scp_facts_used, classic_facts_used
 
 
-def plot_results(num_rules_list, scp_times, classic_times, scp_rules, classic_rules):
+def plot_results(num_rules_list, scp_times, classic_times, scp_rules, classic_rules, scp_facts, classic_facts):
     """
     Plot the benchmark results
     """
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(20, 6))
 
     # Time comparison
     ax1.plot(num_rules_list, scp_times, 'o-', label='SCP Algorithm')
@@ -174,6 +189,15 @@ def plot_results(num_rules_list, scp_times, classic_times, scp_rules, classic_ru
     ax2.legend()
     ax2.grid(True)
 
+    # Facts used comparison
+    ax3.plot(num_rules_list, scp_facts, 'o-', label='SCP Algorithm')
+    ax3.plot(num_rules_list, classic_facts, 's-', label='Classic Algorithm')
+    ax3.set_xlabel('Number of Rules')
+    ax3.set_ylabel('Facts Used')
+    ax3.set_title('Facts Used Comparison')
+    ax3.legend()
+    ax3.grid(True)
+
     plt.tight_layout()
     plt.savefig('scp_vs_classic_comparison.png')
     plt.show()
@@ -181,19 +205,20 @@ def plot_results(num_rules_list, scp_times, classic_times, scp_rules, classic_ru
 
 if __name__ == "__main__":
     # Define test cases with increasing complexity
-    num_facts_list = [20, 50, 100, 200, 300,500, 700]
-    num_rules_list = [5,10,15,20,25,30,40]
+    num_facts_list = [2, 100, 1000, 2000, 3000, 5000, 7000]
+    num_rules_list = [20, 50, 100, 200, 300, 500, 700]
 
     # Run benchmarks
-    scp_times, classic_times, scp_rules, classic_rules = benchmark_comparison(
+    scp_times, classic_times, scp_rules, classic_rules, scp_facts, classic_facts = benchmark_comparison(
         num_facts_list, num_rules_list
     )
 
     # Plot results
-    plot_results(num_rules_list, scp_times, classic_times, scp_rules, classic_rules)
+    plot_results(num_rules_list, scp_times, classic_times, scp_rules, classic_rules, scp_facts, classic_facts)
 
     # Print summary
     print("\nSummary:")
     print("========")
     print(f"Average speedup: {sum(c / s for c, s in zip(classic_times, scp_times)) / len(classic_times):.2f}x")
     print(f"Average rule reduction: {sum(c / s for c, s in zip(classic_rules, scp_rules)) / len(classic_rules):.2f}x")
+    print(f"Average fact reduction: {sum(c / s for c, s in zip(classic_facts, scp_facts)) / len(classic_facts):.2f}x")
